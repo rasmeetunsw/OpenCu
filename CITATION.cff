@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: CuSCORE Paper Reproducibility Release
+message: "If you use this software, please cite the associated article and software release."
+type: software
+authors:
+  - family-names: Singh
+    given-names: Rasmeet
+repository-code: https://github.com/rasmeetunsw/CuSCORE
+version: 1.0.0
+date-released: 2026-03-13
