@@ -78,16 +78,13 @@ This repository is a reproducibility release prepared for academic publication. 
 Associated manuscript:
 **OpenCu: An Open-Source Framework for Evaluating Renewables Integration in the Copper Value Chain**
 
-Authors:
-**(
-    r"Rasmeet Singh$^{a,b}$, "
-    r"Gabi Burge$^{c}$, "
-    r"Muhammad Haider Ali Khan$^{a,b*}$, "
-    r"Serkan Saydam$^{a}$, "
-    r"Ismet Canbulat$^{a}$, "
-    r"Iain MacGill$^{d,e}$, "
-    r"Rahman Daiyan$^{a,b*}$"
-)**
+**Authors:** Rasmeet Singh<sup>a,b</sup>, Gabi Burge<sup>c</sup>, Muhammad Haider Ali Khan<sup>a,b</sup>, Serkan Saydam<sup>a</sup>, Ismet Canbulat<sup>a</sup>, Iain MacGill<sup>d,e</sup>, Rahman Daiyan<sup>a,b</sup>
+
+<sup>a</sup> School of Minerals and Energy Resources Engineering, UNSW Sydney  
+<sup>b</sup> ARC Training Centre for the Global Hydrogen Economy, Sydney, 2052, Australia  
+<sup>c</sup> School of Chemical Engineering, University of New South Wales (UNSW), Sydney, 2052, Australia  
+<sup>d</sup> School of Electrical Engineering and Telecommunications, University of New South Wales (UNSW), Sydney, 2052, Australia  
+<sup>e</sup> Collaboration on Energy and Environmental Markets, University of New South Wales (UNSW), Sydney, 2052, Australia
 
 ## Citation
 If you use this code, please cite:
