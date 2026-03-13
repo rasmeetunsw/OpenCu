@@ -5,6 +5,21 @@ type: software
 authors:
   - family-names: Singh
     given-names: Rasmeet
+  - family-names: Burge
+    given-names: Gabi
+  - family-names: Khan
+    given-names: MHA
+  - family-names: Saydam
+    given-names: Serkan
+  - family-names: Canbulat
+    given-names: Ismet
+  - family-names: MacGill
+    given-names: Iain
+  - family-names: Daiyan
+    given-names: Rahman
 repository-code: https://github.com/rasmeetunsw/CuSCORE
+url: https://github.com/rasmeetunsw/CuSCORE
+abstract: "Paper-focused reproducibility release of the CuSCORE modelling framework for techno-economic and emissions analysis across Copper value chain."
+license: MIT
 version: 1.0.0
 date-released: 2026-03-13
