@@ -78,6 +78,12 @@ This repository is a reproducibility release prepared for academic publication. 
 Associated manuscript:
 **OpenCu: An Open-Source Framework for Evaluating Renewables Integration in the Copper Value Chain**
 
+## Software archive
+The archived release of this reproducibility package is available on Zenodo.
+
+**DOI:** 10.5281/zenodo.19017043 
+**Zenodo record:** (https://doi.org/10.5281/zenodo.19017042)
+
 **Authors:** Rasmeet Singh<sup>a,b</sup>, Gabi Burge<sup>c</sup>, Muhammad Haider Ali Khan<sup>a,b</sup>, Serkan Saydam<sup>a</sup>, Ismet Canbulat<sup>a</sup>, Iain MacGill<sup>d,e</sup>, Rahman Daiyan<sup>a,b</sup>
 
 <sup>a</sup> School of Minerals and Energy Resources Engineering, UNSW Sydney  
@@ -88,14 +94,14 @@ Associated manuscript:
 
 ## Citation
 If you use this code, please cite:
-1. the associated journal article
-2. the archived software release DOI
+1. the associated journal article  
+2. the archived software release on Zenodo
 
-A `CITATION.cff` file and Zenodo DOI can be added once the repository is archived.
+Software DOI: **10.5281/zenodo.19017043**
 
 ## License
-Choose and insert an appropriate software license before public release.
+This repository is released under the **MIT License**.
 
 ## Contact
 For questions regarding the reproducibility release, contact:
-**r.daiyan@unsw.edu.au, M.H.A.K: muhammadhaiderali.khan@unsw.edu.au  **
+r.daiyan@unsw.edu.au, M.H.A.K: muhammadhaiderali.khan@unsw.edu.au
