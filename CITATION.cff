@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: CuSCORE Paper Reproducibility Release
+title: OpenCu Paper Reproducibility Release
 message: "If you use this software, please cite the associated article and software release."
 type: software
 authors:
@@ -8,7 +8,7 @@ authors:
   - family-names: Burge
     given-names: Gabi
   - family-names: Khan
-    given-names: MHA
+    given-names: Muhammad Haider Ali
   - family-names: Saydam
     given-names: Serkan
   - family-names: Canbulat
@@ -17,9 +17,10 @@ authors:
     given-names: Iain
   - family-names: Daiyan
     given-names: Rahman
-repository-code: https://github.com/rasmeetunsw/CuSCORE
-url: https://github.com/rasmeetunsw/CuSCORE
-abstract: "Paper-focused reproducibility release of the CuSCORE modelling framework for techno-economic and emissions analysis across Copper value chain."
+repository-code: "https://github.com/rasmeetunsw/OpenCu"
+url: "https://github.com/rasmeetunsw/OpenCu"
+abstract: "Paper-focused reproducibility release of the OpenCu modelling framework for techno-economic and emissions analysis across the copper value chain."
+doi: 10.5281/zenodo.19017042
 license: MIT
 version: 1.0.0
-date-released: 2026-03-13
+date-released: 2026-03-14
