@@ -104,4 +104,4 @@ This repository is released under the **MIT License**.
 
 ## Contact
 For questions regarding the reproducibility release, contact:
-r.daiyan@unsw.edu.au, M.H.A.K: muhammadhaiderali.khan@unsw.edu.au
+R.D: r.daiyan@unsw.edu.au, M.H.A.K: muhammadhaiderali.khan@unsw.edu.au
