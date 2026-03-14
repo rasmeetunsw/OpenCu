@@ -20,7 +20,7 @@ authors:
 repository-code: "https://github.com/rasmeetunsw/OpenCu"
 url: "https://github.com/rasmeetunsw/OpenCu"
 abstract: "Paper-focused reproducibility release of the OpenCu modelling framework for techno-economic and emissions analysis across the copper value chain."
-doi: 10.5281/zenodo.19017042
+doi: 10.5281/zenodo.19017217
 license: MIT
-version: 1.0.0
+version: 1.0.1
 date-released: 2026-03-14
