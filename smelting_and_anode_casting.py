@@ -1,5 +1,4 @@
 # Copper Smelting and Anode Casting Model
-# Australia (Revised with CAPEX/O&M and staffing fixes + Advanced Calibration)
 
 import numpy as np
 import pandas as pd
@@ -10,7 +9,7 @@ CEPCI_2011_DEFAULT = 585.7
 CEPCI_2011_BASE = CEPCI_2011_DEFAULT
 
 DEFAULT_MINE_CAPACITY = 10_000_000  # t-ore/yr
-DEFAULT_ORE_GRADE = 0.0079
+DEFAULT_ORE_GRADE = 0.006
 scope1_baseline = 0.0
 project_life = 30
 
@@ -20,8 +19,8 @@ CO2_PER_KG_C = 44.0 / 12.0
 fuel_data = {
     "Natural Gas": {
         "Energy_Per_Mass": 13.7,
-        "Fuel_Price": 0.118,
-        "Emissions_Factor": 0.18,
+        "Fuel_Price": 0.036, #10 (USD/GJ)/277.78=0.036 USD/kWh
+        "Emissions_Factor": 0.2,
         "Efficiency": 0.90,
         "Needs_Reducing_Agent": True,
         "Reducing_Agent_Type": "Coke",
@@ -37,7 +36,7 @@ fuel_data = {
     "Hydrogen": {
         "Energy_Per_Mass": 33.33,
         "Fuel_Price": 0.108,
-        "Emissions_Factor": 0.05,
+        "Emissions_Factor": 0.0,
         "Efficiency": 0.90,
         "Needs_Reducing_Agent": False,
         "Reducing_Agent_Type": None,
@@ -63,7 +62,7 @@ def compute_flows(
     converter_rec=0.97,
     anode_rec=0.97,
     anode_grade=0.999,
-    anode_availability=0.90,
+    anode_availability=1.0,
     matte_grade=0.65,
     blister_grade=0.99,
     slag_ratio=2.2,
@@ -111,14 +110,14 @@ def _run_scenario_raw(
     discount_rate=7.0,
     plant_availability=0.90,
     concentrate_grade=0.30,
-    copper_recovery=0.85,
+    copper_recovery=0.875,
     ore_grade=DEFAULT_ORE_GRADE,
     mine_capacity=DEFAULT_MINE_CAPACITY,
     # Electricity & emissions
-    ppa_emission_factor=0.78,
-    electricity_price=0.112,
+    ppa_emission_factor=0.56,
+    electricity_price=0.06,
     # Policy & baseline
-    carbon_price_usd_per_t=21.9,
+    carbon_price_usd_per_t=0,
     scope1_baseline_kg_per_t_anode=0.0,
     # Custom fuel prices (USD/kWh)
     custom_fuel_prices=None,
@@ -134,8 +133,8 @@ def _run_scenario_raw(
     # O&M and staffing (user-editable)
     maintenance_pct_of_installed=0.05,  # 5% of installed CAPEX per year (typical 3–6%)
     staff_count=110,
-    salary_base_per_person_AUD=76_979.0,
-    fx_USD_per_AUD=0.70,
+    salary_base_per_person_AUD=53885, #USD
+    fx_USD_per_AUD=0.7, #This is AUD:USD factor; Change is salary input is in AUD
     # Optional extras
     additional_capital_cost_usd=0.0,
     # 🔹 NEW: optional aggregate plant-load overrides (Aurubis/Fritz-style)
@@ -215,13 +214,14 @@ def _run_scenario_raw(
 
     # --- 1. CAPITAL COST ESTIMATES (installed, before CRF) ---
     # Per-tonne-anode capital costs scaled by CEPCI ratio (2024 vs 2011). Base 4500 USD/t-anode split.
-    Capex_Concentrate_Handling_And_Drying_per_t_anode = 0.10 * 4500 * CEPCI_RATIO
-    Capex_Smelting_Furnace_per_t_anode = 0.15 * 4500 * CEPCI_RATIO
-    Capex_Converter_per_t_anode = 0.15 * 4500 * CEPCI_RATIO
-    Capex_Slag_Cleaning_per_t_anode = 0.10 * 4500 * CEPCI_RATIO
-    Capex_Anode_Furnace_per_t_anode = 0.10 * 4500 * CEPCI_RATIO
-    Capex_Oxygen_Plant_per_t_anode = 0.10 * 4500 * CEPCI_RATIO
-    Capex_Gas_Handling_System_per_t_anode = 0.30 * 4500 * CEPCI_RATIO
+    BASE_CAPEX_PER_T_ANODE = 4500
+    Capex_Concentrate_Handling_And_Drying_per_t_anode = 0.10 * BASE_CAPEX_PER_T_ANODE * CEPCI_RATIO
+    Capex_Smelting_Furnace_per_t_anode = 0.15 * BASE_CAPEX_PER_T_ANODE * CEPCI_RATIO
+    Capex_Converter_per_t_anode = 0.15 * BASE_CAPEX_PER_T_ANODE * CEPCI_RATIO
+    Capex_Slag_Cleaning_per_t_anode = 0.10 * BASE_CAPEX_PER_T_ANODE * CEPCI_RATIO
+    Capex_Anode_Furnace_per_t_anode = 0.10 * BASE_CAPEX_PER_T_ANODE * CEPCI_RATIO
+    Capex_Oxygen_Plant_per_t_anode = 0.10 * BASE_CAPEX_PER_T_ANODE * CEPCI_RATIO
+    Capex_Gas_Handling_System_per_t_anode = 0.30 * BASE_CAPEX_PER_T_ANODE * CEPCI_RATIO
 
     # Scale to annual capacity (t-anode/yr)
     Capex_Concentrate_USD = Capex_Concentrate_Handling_And_Drying_per_t_anode * Anode_Production_Capacity
@@ -381,7 +381,7 @@ def _run_scenario_raw(
         Anode_Casting_KWh_annual = Anode_Casting_kWh_per_t_anode * Copper_Anode_Production
 
         # Apply fuel efficiency for heating
-        Anode_Heating_kWh_fuel_input = Anode_Heating_kWh_annual / max(AF_E["Efficiency"], 1e-9)
+        Anode_Heating_kWh_fuel_input = Anode_Heating_kWh_annual
         Emissions_From_Anode_Furnace_Fuel = Anode_Heating_kWh_fuel_input * AF_E["Emissions_Factor"]
         Cost_Anode_Fuel = Anode_Heating_kWh_fuel_input * AF_E["Fuel_Price"]
 
@@ -485,7 +485,6 @@ def _run_scenario_raw(
         + Annual_Heat_Fuel_Costs
         + Annual_Reductant_Costs
         + Annual_Electricity_Cost
-        + Annual_Flux_Cost if 'Annual_Flux_Cost' in locals() else 0.0
         + Annual_Maintenance_Cost
         + Additional_Operating_Cost
     )
@@ -700,6 +699,17 @@ def run_scenario(*args, **kwargs):
     results.update(_build_breakdown_summaries(results))
     return results
 
+def _round_nested(d, ndigits=2):
+    out = {}
+    for k, v in d.items():
+        if isinstance(v, dict):
+            out[k] = _round_nested(v, ndigits)
+        else:
+            try:
+                out[k] = round(float(v), ndigits)
+            except:
+                out[k] = v
+    return out
 
 def _print_summary(results):
     from pprint import pprint
@@ -714,25 +724,57 @@ def _print_summary(results):
     print(f"Scope 1 Intensity (kgCO2/t-anode): {results.get('Scope 1 Intensity (kgCO2/t-anode)', 0.0):.2f}")
 
     print("\n=== COST BREAKDOWN (USD/t-anode) ===")
-    pprint(results["Cost_Breakdown_Summary"]["USD/t-anode"])
+    pprint(_round_nested(results["Cost_Breakdown_Summary"]["USD/t-anode"]))
+
     print("\n=== COST BREAKDOWN (USD/t-conc) ===")
-    pprint(results["Cost_Breakdown_Summary"]["USD/t-conc"])
+    pprint(_round_nested(results["Cost_Breakdown_Summary"]["USD/t-conc"]))
+
     print("\n=== COST BREAKDOWN (USD/t-Cu) ===")
-    pprint(results["Cost_Breakdown_Summary"]["USD/t-Cu"])
+    pprint(_round_nested(results["Cost_Breakdown_Summary"]["USD/t-Cu"]))
+
     print("\n=== COST BREAKDOWN (USD/yr) ===")
-    pprint(results["Cost_Breakdown_Summary"]["USD/yr"])
+    pprint(_round_nested(results["Cost_Breakdown_Summary"]["USD/yr"]))
 
     print("\n=== EMISSIONS BREAKDOWN (kgCO2/t-anode) ===")
-    pprint(results["Emissions_Breakdown_Summary"]["kgCO2/t-anode"])
-    print("\n=== EMISSIONS BREAKDOWN (kgCO2/t-conc) ===")
-    pprint(results["Emissions_Breakdown_Summary"]["kgCO2/t-conc"])
-    print("\n=== EMISSIONS BREAKDOWN (kgCO2/t-Cu) ===")
-    pprint(results["Emissions_Breakdown_Summary"]["kgCO2/t-Cu"])
-    print("\n=== EMISSIONS BREAKDOWN (kgCO2/yr) ===")
-    pprint(results["Emissions_Breakdown_Summary"]["kgCO2/yr"])
+    pprint(_round_nested(results["Emissions_Breakdown_Summary"]["kgCO2/t-anode"]))
 
+    print("\n=== EMISSIONS BREAKDOWN (kgCO2/t-conc) ===")
+    pprint(_round_nested(results["Emissions_Breakdown_Summary"]["kgCO2/t-conc"]))
+
+    print("\n=== EMISSIONS BREAKDOWN (kgCO2/t-Cu) ===")
+    pprint(_round_nested(results["Emissions_Breakdown_Summary"]["kgCO2/t-Cu"]))
+
+    print("\n=== EMISSIONS BREAKDOWN (kgCO2/yr) ===")
+    pprint(_round_nested(results["Emissions_Breakdown_Summary"]["kgCO2/yr"]))
 
 if __name__ == "__main__":
-    baseline = run_scenario(DEFAULT_FUEL_CONFIG, scenario_name="Baseline")
+    baseline = run_scenario(
+        DEFAULT_FUEL_CONFIG,
+        scenario_name="Baseline",
+        project_life=30,
+        discount_rate=7.0,
+        plant_availability=0.90,
+        concentrate_grade=0.30,
+        copper_recovery=0.875,
+        ore_grade=0.006,
+        mine_capacity=10_000_000,
+        ppa_emission_factor=0.56,
+        electricity_price=0.06,
+        carbon_price_usd_per_t=0.0,
+        scope1_baseline_kg_per_t_anode=0.0,
+        custom_fuel_prices={"Natural Gas": 10 / 277.78},
+        cepci_current=798.8,
+        cepci_ref=585.7,
+        maintenance_pct_of_installed=0.05,
+        staff_count=110,
+        salary_base_per_person_AUD=53885.0,
+        fx_USD_per_AUD=0.7, #This is AUD:USD factor; Change is salary input is in AUD
+        slag_reductant_type="Coke",
+        slag_reductant_rate_kg_per_t_slag=15.0,
+        anode_reductant_type="None",
+        anode_reductant_rate_kg_per_t_anode=0.0,
+        reductant_prices_per_kg={"Coke": 0.43, "Graphite": 1.2},
+        advanced_calibration=None,
+    )
     print("Baseline smelting backend run completed.")
     _print_summary(baseline)
