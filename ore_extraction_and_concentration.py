@@ -1,11 +1,25 @@
-# Ore Extraction And Concentration Model
+"""
+Ore Extraction and Concentration Model
+
+HOW TO USE THIS FILE
+1. Start at the section marked 'USER INPUTS: EDIT HERE FIRST' or change assumptions in any input blocks.
+2. Run the file directly to see the baseline output printed at the bottom.
+3. If you are unsure, keep the defaults and only change product / route / fuel / scenario selections.
+
+GENERAL NOTES
+- Units are shown in variable names or comments where possible.
+- Monetary values are in USD unless stated otherwise.
+- Energy is usually in kWh, MJ, or GJ depending on the stage.
+- Printed outputs are rounded for readability only; internal calculations are not rounded.
+"""
 
 from __future__ import annotations
 
 from copy import deepcopy
 from typing import Any, Dict
 
-# -------------------- Financial & Constants --------------------
+# ==================== USER INPUTS: EDIT HERE FIRST ====================
+# Financial constants and default assumptions.
 PROJECT_LIFE = 30  # years
 DISCOUNT_RATE = 7  # %
 CEPCI_2024 = 798.8
@@ -13,7 +27,7 @@ CEPCI_1992 = 358.2
 INTEREST_RATE = 7  # % (kept for future modelling)
 EOL_CAPACITY_DROP_FRAC = 0.20  # replace when capacity/efficiency has fallen by 20%
 
-# -------------------- Process Plant Inputs (defaults) --------------------
+# -------------------- Main baseline process inputs --------------------
 PROCESS_PLANT_AVAILABILITY = 90  # %
 MINE_CAPACITY = 10_000_000  # t-ore/yr
 ORE_GRADE = 0.6  # %
@@ -115,6 +129,7 @@ DEFAULT_STATIONARY_SPLIT = {
     "Beneficiation": 27.9 / 46.4,
 }
 
+# --------------- Change these for scenario testing -----------------------
 DEFAULT_FUEL_PENETRATION = {
     "Drilling": {"Diesel": 1.0, "Battery": 0.0, "Hydrogen": 0.0},
     "Loading": {"Diesel": 1.0, "Battery": 0.0, "Hydrogen": 0.0},
@@ -178,6 +193,8 @@ def _validate_fuel_penetration(fuel_penetration: Dict[str, Dict[str, float]]) ->
             raise ValueError(f"{process} cannot use Diesel. Use Grid, Battery, or Hydrogen.")
 
 
+
+# ==================== CORE MODEL FUNCTIONS ====================
 
 def run_scenario(
     fuel_penetration: Dict[str, Dict[str, float]],
@@ -846,6 +863,8 @@ from pprint import pprint
 def rounded_dict(d, ndigits=2):
     return {k: round(float(v), ndigits) for k, v in d.items()}
 
+# ==================== OUTPUT HELPERS ====================
+
 def _print_summary(results):
     print("Baseline mining backend run completed.")
     print(f"Levelised Cost (USD/t-Cu): {results['Levelised Cost (USD/t-Cu)']:.2f}")
@@ -871,6 +890,8 @@ def _print_summary(results):
 
     print("\n=== EMISSIONS BREAKDOWN (kgCO2/yr) ===")
     pprint(rounded_dict(emissions_summary["kgCO2/yr"]))
+
+# ==================== EXAMPLE BASELINE RUN ====================
 
 if __name__ == "__main__":
     baseline = run_scenario(
