@@ -1,4 +1,17 @@
-# Rail Transport Model
+"""
+Rail Transport Model 
+
+HOW TO USE THIS FILE
+1. Start at the section marked 'USER INPUTS: EDIT HERE FIRST' or change assumptions in any input blocks.
+2. Run the file directly to see the baseline output printed at the bottom.
+3. If you are unsure, keep the defaults and only change product / route / fuel / scenario selections.
+
+GENERAL NOTES
+- Units are shown in variable names or comments where possible.
+- Monetary values are in USD unless stated otherwise.
+- Energy is usually in kWh, MJ, or GJ depending on the stage.
+- Printed outputs are rounded for readability only; internal calculations are not rounded.
+"""
 
 from __future__ import annotations
 
@@ -21,7 +34,8 @@ if TRANSPORTED_MATERIAL not in MATERIAL_GRADES:
 
 TRANSPORT_GRADE = MATERIAL_GRADES[TRANSPORTED_MATERIAL]
 
-# -------------------- Scenario defaults --------------------
+# ==================== USER INPUTS: EDIT HERE FIRST ====================
+# Scenario defaults and default asset data.
 DEFAULT_LOCOMOTIVE_DATA = {
     "Diesel": {
         "Locomotive_Cost_USD": 3_940_000,
@@ -187,6 +201,8 @@ def get_tonnes_per_tcu(material_choice: str = DEFAULT_MATERIAL, grade: float | N
         grade = MATERIAL_GRADES[material_choice]
     return 1.0 / max(float(grade), 1e-12)
 
+
+# ==================== CORE MODEL FUNCTIONS ====================
 
 def compute_results(
     loco_table,
@@ -519,6 +535,8 @@ def _augment_result_units(result):
     return result
 
 
+# ==================== MAIN WRAPPER FUNCTION ====================
+
 def run_model(
     locomotive_data=None,
     material_choice: str = DEFAULT_MATERIAL,
@@ -539,6 +557,8 @@ from pprint import pprint
 
 def rounded_dict(d, ndigits=2):
     return {k: round(float(v), ndigits) for k, v in d.items()}
+
+# ==================== OUTPUT HELPERS ====================
 
 def _print_summary(result):
     print(f"Scenario: {result.get('Scenario', 'N/A')}")
@@ -567,6 +587,8 @@ def _print_summary(result):
 
     print("\n=== EMISSIONS BREAKDOWN (kgCO2/year) ===")
     pprint(rounded_dict(emissions_summary["kgCO2/year"]))
+
+# ==================== EXAMPLE BASELINE RUN ====================
 
 if __name__ == "__main__":
     baseline_all = run_model(material_choice=TRANSPORTED_MATERIAL, grade=TRANSPORT_GRADE,)
