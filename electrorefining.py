@@ -1,6 +1,5 @@
 # Copper Electrolytic Refining Model
-# Australia
-# Paper-ready backend version with Streamlit/UI removed
+
 
 import numpy as np
 import pandas as pd
