@@ -1,5 +1,4 @@
-"""Ore Extraction And Concentration
-"""
+# Ore Extraction And Concentration Model
 
 from __future__ import annotations
 
