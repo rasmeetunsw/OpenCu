@@ -1,7 +1,4 @@
-
-# Shipping TEA Model — paper-safe backend
-# Extracted from Streamlit app; retains calculation core and default assumptions,
-# while removing UI, plotting, and dashboard logic.
+# Marine Shipping Model
 
 import copy
 import math
@@ -36,12 +33,11 @@ port_types = {
     "Qingdao":               "Refined",
 }
 
-vessel_defaults = {"Concentrate": "Supramax", "Refined": "Panamax"}
 
 Ship_Data = [
     {"Ship Type":"Handysize", "Length":155, "Beam":23, "Draft":10,
      "Displacement":31000, "Dead Weight":25000, "Installed Power":5.5, "Speed":14,
-     "Newbuild Cost":27_613_262, "Suez Canal":"YES", "Panama Canal":"YES"},
+     "Newbuild Cost":37_000_000, "Suez Canal":"YES", "Panama Canal":"YES"},
     {"Ship Type":"Supramax", "Length":190, "Beam":32, "Draft":13,
      "Displacement":70000, "Dead Weight":60000, "Installed Power":9.0, "Speed":15,
      "Newbuild Cost":37_277_903, "Suez Canal":"YES", "Panama Canal":"YES"},
@@ -55,7 +51,7 @@ Ship_Data = [
 
 Fuel_Assumptions = [
     {"Fuel":"Heavy Fuel Oil (HFO)", "Engine Efficiency":40.00, "Fuel Energy Content":40.40,
-     "Carbon Emissions":2.98, "Shipping Fuel Cost":650.00,
+     "Carbon Emissions":3.11, "Shipping Fuel Cost":650.00,
      "New Build Diesel Engine Cost":449.00, "New Build Converter Engine Cost":449.00, "New Build Tank Scrubber Cost":0.00},
     {"Fuel":"Marine Gas Oil (MGO)", "Engine Efficiency":40.00, "Fuel Energy Content":42.70,
      "Carbon Emissions":3.21, "Shipping Fuel Cost":999.00,
@@ -70,6 +66,52 @@ Fuel_Assumptions = [
      "Carbon Emissions":0.003, "Shipping Fuel Cost":1400.00,
      "New Build Diesel Engine Cost":449.00, "New Build Converter Engine Cost":673.00, "New Build Tank Scrubber Cost":0.00},
 ]
+
+#
+#
+#
+# ----------------- User selection -----------------
+# ----------------- User selections -----------------
+SHIPPING_PRODUCT = "Refined Copper"   # choose: "Ore", "Concentrate", "Refined Copper"
+
+DEPARTURE_PORT = "Townsville Port (AUS)"   # choose from distances_nm keys
+ARRIVAL_PORT = "New Orleans"               # choose from distances_nm[DEPARTURE_PORT] keys
+
+VESSEL_TYPE = "Supramax"   # choose: "Handysize", "Supramax", "Panamax", "HandyCape"
+
+USE_CUSTOM_DISTANCE = False
+CUSTOM_DISTANCE_NM = 9758.0   # only used if USE_CUSTOM_DISTANCE = True
+
+SELECTED_FUEL = "Heavy Fuel Oil (HFO)"   # choose: "Heavy Fuel Oil (HFO)", "Marine Gas Oil (MGO)", "Very Low Sulfur Fuel Oil (VLSFO)", "Ammonia", "Methanol"
+
+VALID_PRODUCTS = {"Ore", "Concentrate", "Refined Copper"}
+VALID_VESSELS = {"Handysize", "Supramax", "Panamax", "HandyCape"}
+VALID_FUELS = {
+    "Heavy Fuel Oil (HFO)",
+    "Marine Gas Oil (MGO)",
+    "Very Low Sulfur Fuel Oil (VLSFO)",
+    "Ammonia",
+    "Methanol",
+}
+
+if SHIPPING_PRODUCT not in VALID_PRODUCTS:
+    raise ValueError(f"Invalid SHIPPING_PRODUCT: {SHIPPING_PRODUCT}")
+
+if DEPARTURE_PORT not in distances_nm:
+    raise ValueError(f"Invalid DEPARTURE_PORT: {DEPARTURE_PORT}")
+
+if ARRIVAL_PORT not in distances_nm[DEPARTURE_PORT]:
+    raise ValueError(f"Invalid ARRIVAL_PORT '{ARRIVAL_PORT}' for departure '{DEPARTURE_PORT}'")
+
+if VESSEL_TYPE not in VALID_VESSELS:
+    raise ValueError(f"Invalid VESSEL_TYPE: {VESSEL_TYPE}")
+
+if SELECTED_FUEL not in VALID_FUELS:
+    raise ValueError(f"Invalid SELECTED_FUEL: {SELECTED_FUEL}")
+#
+#
+#
+
 
 def CRF_from_rate(i, n):
     i = float(i)
@@ -373,7 +415,7 @@ def emissions_breakdown_sailing_port(legA_kwargs, legB_kwargs, fuel_name):
 def compute_default_wacc(debt_frac_pct=40, cost_debt_pct=6.0, cost_equity_pct=12.0, tax_rate_pct=30.0):
     return (debt_frac_pct/100.0) * (cost_debt_pct/100.0) * (1 - tax_rate_pct/100.0) + (1 - debt_frac_pct/100.0) * (cost_equity_pct/100.0)
 
-DEFAULT_EXPORT_TYPE = "Concentrate"
+DEFAULT_EXPORT_TYPE = SHIPPING_PRODUCT
 DEFAULT_ORE_GRADE = 0.60
 DEFAULT_CONCENTRATE_GRADE = 0.30
 DEFAULT_CARBON_PRICE = 0.0
@@ -390,9 +432,9 @@ DEFAULT_RESIDUAL_FRAC = 0.10
 
 DEFAULT_CREW_HEADCOUNT = 20
 DEFAULT_CREW_HOURS_PER_YEAR = 1920
-DEFAULT_CREW_WAGE_USD_PER_HOUR = 36.0
+DEFAULT_CREW_WAGE_USD_PER_HOUR = 45.0
 DEFAULT_CPI_MULTIPLIER = 1.00
-DEFAULT_USE_CEPCI = True
+DEFAULT_USE_CEPCI = False
 DEFAULT_CEPCI_BASE = 600.0
 DEFAULT_CEPCI_CURRENT = 700.0
 
@@ -412,31 +454,37 @@ DEFAULT_PERIODIC_MAINTENANCE_USD_YR = 588666.0
 DEFAULT_BACKHAUL_LOAD_FRAC = 0.0
 DEFAULT_BACKHAUL_CREDIT_USD_PER_T = 0.0
 DEFAULT_SPEED_POWER_EXP = 3.0
-DEFAULT_SEA_STATE_POWER_PCT = 10.0
+DEFAULT_SEA_STATE_POWER_PCT = 0.0
 DEFAULT_AUX_POWER_KW = 1500.0
 
-DEFAULT_ROUTE_DEPARTURE = "Townsville Port (AUS)"
-DEFAULT_ROUTE_ARRIVAL = "New Orleans"
-DEFAULT_SELECTED_FUEL = "Heavy Fuel Oil (HFO)"
+DEFAULT_ROUTE_DEPARTURE = DEPARTURE_PORT
+DEFAULT_ROUTE_ARRIVAL = ARRIVAL_PORT
+DEFAULT_SELECTED_FUEL = SELECTED_FUEL
 DEFAULT_USE_LEG_B = False
 
-def _select_default_ship_for_departure(departure_port):
+def _select_ship(ship_type):
     ship_table = copy.deepcopy(Ship_Data)
-    ptype = port_types.get(departure_port, "Refined")
-    default_ship_type = vessel_defaults.get(ptype, "Panamax")
-    return next(s for s in ship_table if s["Ship Type"] == default_ship_type)
+    matches = [s for s in ship_table if s["Ship Type"] == ship_type]
+    if not matches:
+        raise ValueError(f"No ship found for type: {ship_type}")
+    return matches[0]
 
 def build_default_legA_kwargs():
     dep = DEFAULT_ROUTE_DEPARTURE
     arr = DEFAULT_ROUTE_ARRIVAL
-    ship = _select_default_ship_for_departure(dep)
+    ship = _select_ship(VESSEL_TYPE)
+
+    if USE_CUSTOM_DISTANCE:
+        distance_nm_value = float(CUSTOM_DISTANCE_NM)
+    else:
+        distance_nm_value = float(distances_nm[dep][arr])
 
     return dict(
         export_type=DEFAULT_EXPORT_TYPE,
         ore_grade=DEFAULT_ORE_GRADE,
         concentrate_grade=DEFAULT_CONCENTRATE_GRADE,
         carbon_price=DEFAULT_CARBON_PRICE,
-        distance_nm_value=float(distances_nm[dep][arr]),
+        distance_nm_value=distance_nm_value,
         use_suez=(canal_passage["Suez Canal"][dep][arr] == "YES"),
         use_panama=(canal_passage["Panama Canal"][dep][arr] == "YES"),
         suez_fee=400000.0,
@@ -492,19 +540,19 @@ def run_default_scenario(selected_fuel=DEFAULT_SELECTED_FUEL):
         "Cost_Breakdown_Summary": {
             "USD/yr": {
                 "CAPEX": result["CAPEX (USD/yr)"],
-                "O&M": result["O&M (USD/yr)"],
+                "O&M + Access": result["O&M (USD/yr)"],
                 "Fuel": result["Fuel Cost (USD/yr)"],
                 "Carbon": result["Carbon Cost (USD/yr)"],
             },
             "USD/t-material": {
                 "CAPEX": result["CAPEX (USD/t-material)"],
-                "O&M": result["O&M (USD/t-material)"],
+                "O&M + Access": result["O&M (USD/t-material)"],
                 "Fuel": result["Fuel Cost (USD/t-material)"],
                 "Carbon": result["Carbon Cost (USD/t-material)"],
             },
             "USD/t-Cu": {
                 "CAPEX": result["CAPEX (USD/t-Cu)"],
-                "O&M": result["O&M (USD/t-Cu)"],
+                "O&M + Access": result["O&M (USD/t-Cu)"],
                 "Fuel": result["Fuel Cost (USD/t-Cu)"],
                 "Carbon": result["Carbon Cost (USD/t-Cu)"],
             },
@@ -518,7 +566,12 @@ def rounded_dict(d, ndigits=2):
 
 def _print_summary(out):
     print("Baseline shipping backend run completed.")
-    print(f"Scenario: {out['Scenario']}")
+    print(f"Fuel: {out['Scenario']}")
+    print(f"Export product: {out['LegA']['export_type']}")
+    print(f"Departure port: {DEFAULT_ROUTE_DEPARTURE}")
+    print(f"Arrival port: {DEFAULT_ROUTE_ARRIVAL}")
+    print(f"Distance (nm): {out['LegA']['distance_nm_value']:.0f}")
+    print(f"Vessel: {out['LegA']['ship_dict']['Ship Type']}")
     r = out["Results"]
 
     print(f"Total Levelised Cost of Shipping (USD/t-material): {r['Total Levelised Cost (USD/t-material)']:.2f}")
