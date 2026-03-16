@@ -1,9 +1,23 @@
-# Copper Electrolytic Refining Model
+"""
+Electrorefining Model 
+
+HOW TO USE THIS FILE
+1. Start at the section marked 'USER INPUTS: EDIT HERE FIRST' or change assumptions in any input blocks.
+2. Run the file directly to see the baseline output printed at the bottom.
+3. If you are unsure, keep the defaults and only change product / route / fuel / scenario selections.
+
+GENERAL NOTES
+- Units are shown in variable names or comments where possible.
+- Monetary values are in USD unless stated otherwise.
+- Energy is usually in kWh, MJ, or GJ depending on the stage.
+- Printed outputs are rounded for readability only; internal calculations are not rounded.
+"""
 
 import numpy as np
 import pandas as pd
 
-# -------------------- Constants --------------------
+# ==================== USER INPUTS: EDIT HERE FIRST ====================
+# Core constants and default assumptions.
 DEFAULT_PROJECT_LIFE = 30
 DEFAULT_DISCOUNT_RATE = 7.0
 CEPCI_2011_BASE = 585.7
@@ -55,7 +69,7 @@ USD_PER_AUD = 0.7
 HOURS_PER_WEEK = 40
 MAINTENANCE_FRAC_OF_CAPEX_DEFAULT = 0.05
 
-# -------------------- Paper-friendly defaults --------------------
+# -------------------- Main default user inputs --------------------
 DEFAULT_SIMPLE_MIX = {
     "Electricity (PPA) %": 100.0,
     "Natural Gas %": 0.0,
@@ -313,6 +327,8 @@ def _safe_div(a, b):
     return a / b if b not in (0, 0.0, None) else 0.0
 
 
+# ==================== CORE MODEL FUNCTIONS ====================
+
 def run_scenario(
     scenario_name="Baseline",
     simple_mix=None,
@@ -476,6 +492,8 @@ from pprint import pprint
 def rounded_dict(d, ndigits=2):
     return {k: round(float(v), ndigits) for k, v in d.items()}
 
+# ==================== OUTPUT HELPERS ====================
+
 def _print_summary(results):
     print(f"Scenario: {results.get('Scenario', 'N/A')}")
     print(f"Levelised Cost (USD/t-cathode): {results.get('Levelised Cost (USD/t-cathode)', 0.0):.2f}")
@@ -512,6 +530,8 @@ def _print_summary(results):
 
     print("\n=== EMISSIONS BREAKDOWN (kgCO2/yr) ===")
     pprint(rounded_dict(emissions_summary["kgCO2/yr"]))
+
+# ==================== EXAMPLE BASELINE RUN ====================
 
 if __name__ == "__main__":
     baseline = run_scenario(
