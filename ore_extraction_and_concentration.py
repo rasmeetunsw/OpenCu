@@ -1,8 +1,4 @@
-"""Paper-ready backend for copper ore extraction and concentration.
-
-This module retains the numerical logic and default assumptions from the
-original mining Streamlit app while removing all Streamlit/UI code.
-It is intended for reproducible academic release, not for full platform release.
+"""Ore Extraction And Concentration
 """
 
 from __future__ import annotations
@@ -21,9 +17,9 @@ EOL_CAPACITY_DROP_FRAC = 0.20  # replace when capacity/efficiency has fallen by 
 # -------------------- Process Plant Inputs (defaults) --------------------
 PROCESS_PLANT_AVAILABILITY = 90  # %
 MINE_CAPACITY = 10_000_000  # t-ore/yr
-ORE_GRADE = 0.79  # %
+ORE_GRADE = 0.6  # %
 CONCENTRATE_GRADE = 30.0  # %
-COPPER_RECOVERY = 85.0  # %
+COPPER_RECOVERY = 87.5  # %
 
 # --- Fuel data (defaults) ---
 DEFAULT_FUEL_DATA: Dict[str, Dict[str, float]] = {
@@ -50,7 +46,7 @@ DEFAULT_FUEL_DATA: Dict[str, Dict[str, float]] = {
     },
     "PPA": {
         "Fuel_Price": 0.06,
-        "Emissions_Factor": 0.5,
+        "Emissions_Factor": 0.56,
         "Efficiency": 1.0,
         "Existing_Cost_per_kW": 0.0,
         "New_Cost_per_kW": 0.0,
@@ -194,13 +190,13 @@ def run_scenario(
     ore_grade: float = ORE_GRADE,
     conc_grade: float = CONCENTRATE_GRADE,
     copper_recovery: float = COPPER_RECOVERY,
-    carbon_price: float = 21.9,
+    carbon_price: float = 0,
     scope1_baseline_kg_per_t_conc: float = 0.0,
     cepci_index: float = CEPCI_2024,
     crush_kwh_per_t_ore: float = 5.5,
     grind_kwh_per_t_ore: float = 11.5,
-    storage_kwh_per_t_ore: float = 1.5,
-    benef_kwh_per_t_ore: float = 27.9,
+    storage_kwh_per_t_ore: float = 3.0,
+    benef_kwh_per_t_ore: float = 12.0,
     explosive_kg_per_t_ore: float = 0.4,
     battery_life_years: float = 7,
     battery_degradation: float = 0.02,
@@ -244,17 +240,14 @@ def run_scenario(
     num_mill_staff: int = 122,
     num_service_staff: int = 62,
     num_admin_staff: int = 34,
-    salary_mining: float = 1186.47 * 52,
-    salary_mill: float = 1186.47 * 52,
-    salary_service: float = 1365.57 * 52,
-    salary_admin: float = 1040 * 52,
+    salary_mining: float = 43187.5,
+    salary_mill: float = 43187.5,
+    salary_service: float = 49706.7,
+    salary_admin: float = 37856,
     fuel_data_override: Dict[str, Dict[str, float]] | None = None,
 ) -> Dict[str, Any]:
+    
     """Run the mining/concentration scenario.
-
-    Parameters retain the defaults from the original app backend. A custom
-    `fuel_data_override` dictionary can be passed to vary prices, efficiencies,
-    and emission factors without changing module-level defaults.
     """
     _validate_fuel_penetration(fuel_penetration)
 
@@ -881,5 +874,25 @@ def _print_summary(results):
     pprint(rounded_dict(emissions_summary["kgCO2/yr"]))
 
 if __name__ == "__main__":
-    baseline = run_scenario(DEFAULT_FUEL_PENETRATION, scenario_name="Baseline")
+    baseline = run_scenario(
+        DEFAULT_FUEL_PENETRATION,
+        scenario_name="Baseline",
+        project_life=30,
+        discount_rate=7,
+        mine_capacity=10_000_000,
+        availability=90,
+        ore_grade=0.6,
+        conc_grade=30.0,
+        copper_recovery=87.5,
+        carbon_price=0.0,
+        scope1_baseline_kg_per_t_conc=0.0,
+        cepci_index=798.8,
+        crush_kwh_per_t_ore=5.5,
+        grind_kwh_per_t_ore=11.5,
+        storage_kwh_per_t_ore=3.0,
+        benef_kwh_per_t_ore=12.0,
+        explosive_kg_per_t_ore=0.4,
+        ppa_price_contract=0.06,
+        ppa_ef=0.56,
+    )
     _print_summary(baseline)
