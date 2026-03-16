@@ -1,6 +1,5 @@
 # Copper Electrolytic Refining Model
 
-
 import numpy as np
 import pandas as pd
 
@@ -12,17 +11,17 @@ CEPCI_CURRENT_DEFAULT = 798.8
 CEPCI_2018_DEFAULT = 603.1
 
 DEFAULT_MINE_CAPACITY = 10_000_000
-DEFAULT_ORE_GRADE = 0.0079
+DEFAULT_ORE_GRADE = 0.006
 
 FUEL_DEFAULTS = {
     "Electricity (PPA)": {
         "Fuel_Price": 0.06,
-        "Emissions_Factor": 0.50,
+        "Emissions_Factor": 0.56,
         "Efficiency": 1.0,
         "Scope": "Scope 2",
     },
     "Natural Gas": {
-        "Fuel_Price": 0.118,
+        "Fuel_Price": 0.036, #10 (USD/GJ)/277.78=0.036 USD/kWh
         "Emissions_Factor": 0.202,
         "Efficiency": 0.90,
         "Scope": "Scope 1",
@@ -58,8 +57,8 @@ MAINTENANCE_FRAC_OF_CAPEX_DEFAULT = 0.05
 
 # -------------------- Paper-friendly defaults --------------------
 DEFAULT_SIMPLE_MIX = {
-    "Electricity (PPA) %": 49.0,
-    "Natural Gas %": 51.0,
+    "Electricity (PPA) %": 100.0,
+    "Natural Gas %": 0.0,
     "Coal %": 0.0,
     "Hydrogen %": 0.0,
 }
@@ -81,25 +80,26 @@ DEFAULT_MODEL_INPUTS = {
     "mine_capacity_t_ore_yr": DEFAULT_MINE_CAPACITY,
     "ore_grade_frac": DEFAULT_ORE_GRADE,
     "conc_grade_frac": 0.30,
-    "copper_recovery_frac": 0.85,
+    "upstream_recovery_frac": 0.875,
+    "refining_recovery_frac": 0.995,
     "process_availability_frac": 0.90,
     "project_life_years": DEFAULT_PROJECT_LIFE,
     "discount_rate_pct": DEFAULT_DISCOUNT_RATE,
-    "carbon_price_usd_per_t": 21.9,
+    "carbon_price_usd_per_t": 0.0,
     "scope1_baseline_kg_per_t_cu": 0.0,
     "fte_count": 120,
-    "avg_salary_usd": 80_000.0,
+    "avg_salary_usd": 61100,
     "capex_current_usd_per_t_capacity": 1000.0,
     "cepci_tankhouse": CEPCI_CURRENT_DEFAULT,
     "maintenance_frac": MAINTENANCE_FRAC_OF_CAPEX_DEFAULT,
-    "ppa_price_usd_per_kwh": 0.111,
-    "ppa_emission_factor": 0.70,
-    "ng_price_usd_per_gj": FUEL_DEFAULTS["Natural Gas"]["Fuel_Price"] * 277.78,
-    "ng_emission_factor": FUEL_DEFAULTS["Natural Gas"]["Emissions_Factor"],
-    "coal_price_usd_per_t": FUEL_DEFAULTS["Coal"]["Fuel_Price"] * (8.14 * 1000),
-    "coal_emission_factor": FUEL_DEFAULTS["Coal"]["Emissions_Factor"],
-    "h2_price_usd_per_kg": FUEL_DEFAULTS["Hydrogen"]["Fuel_Price"] * 33.33,
-    "h2_emission_factor": FUEL_DEFAULTS["Hydrogen"]["Emissions_Factor"],
+    "ppa_price_usd_per_kwh": 0.06,
+    "ppa_emission_factor": 0.56,
+    "ng_price_usd_per_gj": 10.0,
+    "ng_emission_factor": 0.202,
+    "coal_price_usd_per_t": 100.0,
+    "coal_emission_factor": 0.34,
+    "h2_price_usd_per_kg": 3.6,
+    "h2_emission_factor": 0.0,
 }
 
 
@@ -113,20 +113,21 @@ def compute_refining_flows(
     mine_capacity_t_ore_yr,
     ore_grade_frac,
     conc_grade_frac,
-    copper_recovery_frac,
+    upstream_recovery_frac,
     process_availability_frac,
+    refining_recovery=0.995,
     smelter_rec=0.97,
     converter_rec=0.97,
     anode_rec=0.97,
     anode_grade=0.999,
-    anode_availability=0.90,
+    anode_availability=1.0,
     matte_grade=0.65,
     blister_grade=0.99,
     slag_ratio=2.2,
     cathode_grade=0.99,
     cathode_recovery=0.99,
 ):
-    concentrate_produced = (mine_capacity_t_ore_yr * ore_grade_frac * copper_recovery_frac / conc_grade_frac)
+    concentrate_produced = (mine_capacity_t_ore_yr * ore_grade_frac * upstream_recovery_frac / conc_grade_frac)
     contained_cu_in_conc = concentrate_produced * conc_grade_frac
     contained_cu_in_matte = contained_cu_in_conc * smelter_rec
     matte_produced = contained_cu_in_matte / matte_grade
@@ -138,7 +139,7 @@ def compute_refining_flows(
     anode_capacity = cu_after_anode / anode_grade
     t_anode = anode_capacity * anode_availability
 
-    cathode_capacity = t_anode * anode_grade * cathode_recovery / cathode_grade
+    cathode_capacity = t_anode * anode_grade * refining_recovery / cathode_grade
     t_cathode = cathode_capacity * process_availability_frac
     t_cu_total = t_cathode * cathode_grade
     t_cu_per_t_conc = t_cu_total / max(concentrate_produced, 1e-9)
@@ -250,12 +251,14 @@ def advanced_costs_and_emissions(
         thermal_total_kWh_y = input_per_t * t_cu_per_year
         fuel_cost_y = cost_per_t * t_cu_per_year
         fuel_em_y = em_per_t * t_cu_per_year
+
     else:
         tf = fuels[thermal_fuel]
         if thermal_fuel_input_kWh_per_t and thermal_fuel_input_kWh_per_t > 0:
             thermal_input_kWh_per_t = float(thermal_fuel_input_kWh_per_t)
         else:
             thermal_input_kWh_per_t = thermal_useful_kWh_per_t / max(tf["Efficiency"], 1e-9)
+
         thermal_total_kWh_y = thermal_input_kWh_per_t * t_cu_per_year
         fuel_cost_y = thermal_total_kWh_y * tf["Fuel_Price"]
         fuel_em_y = thermal_total_kWh_y * tf["Emissions_Factor"]
@@ -327,8 +330,9 @@ def run_scenario(
         inputs["mine_capacity_t_ore_yr"],
         inputs["ore_grade_frac"],
         inputs["conc_grade_frac"],
-        inputs["copper_recovery_frac"],
+        inputs["upstream_recovery_frac"],
         inputs["process_availability_frac"],
+        refining_recovery=inputs["refining_recovery_frac"],
     )
     t_cathode = float(flows["Copper_Cathode_Production"])
     t_cu_total = float(flows["t_Cu_total"])
@@ -510,6 +514,10 @@ def _print_summary(results):
     pprint(rounded_dict(emissions_summary["kgCO2/yr"]))
 
 if __name__ == "__main__":
-    baseline = run_scenario(scenario_name="Baseline")
+    baseline = run_scenario(
+    scenario_name="Baseline",
+    simple_mix=DEFAULT_SIMPLE_MIX,
+    advanced_calibration=DEFAULT_ADVANCED_CALIBRATION,
+    )
     print("Baseline electrorefining backend run completed.")
     _print_summary(baseline)
