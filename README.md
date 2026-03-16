@@ -81,8 +81,8 @@ Associated manuscript:
 ## Software archive
 The archived release of this reproducibility package is available on Zenodo.
 
-**Version DOI:** 10.5281/zenodo.19017217  
-**Zenodo record:** https://doi.org/10.5281/zenodo.19017217
+**Version DOI:** 10.5281/zenodo.19048769
+**Zenodo record:** https://doi.org/10.5281/zenodo.19048769
 
 **Authors:** Rasmeet Singh<sup>a,b</sup>, Gabi Burge<sup>c</sup>, Muhammad Haider Ali Khan<sup>a,b</sup>, Serkan Saydam<sup>a</sup>, Ismet Canbulat<sup>a</sup>, Iain MacGill<sup>d,e</sup>, Rahman Daiyan<sup>a,b</sup>
 
@@ -97,7 +97,7 @@ If you use this code, please cite:
 1. the associated journal article  
 2. the archived software release on Zenodo
 
-Software DOI: **10.5281/zenodo.19017217**
+Software DOI: **10.5281/zenodo.19048769**
 
 ## License
 This repository is released under the **MIT License**.
