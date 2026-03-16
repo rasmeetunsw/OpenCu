@@ -1,9 +1,23 @@
-# Copper Smelting and Anode Casting Model
+"""
+Smelting and Anode Casting Model 
+
+HOW TO USE THIS FILE
+1. Start at the section marked 'USER INPUTS: EDIT HERE FIRST' or change assumptions in any input blocks.
+2. Run the file directly to see the baseline output printed at the bottom.
+3. If you are unsure, keep the defaults and only change product / route / fuel / scenario selections.
+
+GENERAL NOTES
+- Units are shown in variable names or comments where possible.
+- Monetary values are in USD unless stated otherwise.
+- Energy is usually in kWh, MJ, or GJ depending on the stage.
+- Printed outputs are rounded for readability only; internal calculations are not rounded.
+"""
 
 import numpy as np
 import pandas as pd
 
-# -------------------- Constants --------------------
+# ==================== USER INPUTS: EDIT HERE FIRST ====================
+# Core constants and default assumptions.
 CEPCI_2024_DEFAULT = 798.8
 CEPCI_2011_DEFAULT = 585.7
 CEPCI_2011_BASE = CEPCI_2011_DEFAULT
@@ -619,7 +633,7 @@ def _run_scenario_raw(
 
 
 
-# -------------------- Paper-friendly defaults --------------------
+# -------------------- Main default user inputs --------------------
 DEFAULT_FUEL_CONFIG = {
     "Concentrate Handling": "Natural Gas",
     "Smelting Furnace": "Natural Gas",
@@ -683,6 +697,8 @@ def _build_breakdown_summaries(results):
     }
 
 
+# ==================== CORE MODEL FUNCTIONS ====================
+
 def run_scenario(*args, **kwargs):
     """Paper-ready wrapper around the original smelting backend."""
     results = _run_scenario_raw(*args, **kwargs)
@@ -710,6 +726,8 @@ def _round_nested(d, ndigits=2):
             except:
                 out[k] = v
     return out
+
+# ==================== OUTPUT HELPERS ====================
 
 def _print_summary(results):
     from pprint import pprint
@@ -746,6 +764,8 @@ def _print_summary(results):
 
     print("\n=== EMISSIONS BREAKDOWN (kgCO2/yr) ===")
     pprint(_round_nested(results["Emissions_Breakdown_Summary"]["kgCO2/yr"]))
+
+# ==================== EXAMPLE BASELINE RUN ====================
 
 if __name__ == "__main__":
     baseline = run_scenario(
