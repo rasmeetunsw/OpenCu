@@ -1,10 +1,24 @@
-# Marine Shipping Model
+"""
+Marine Shipping Model
+
+HOW TO USE THIS FILE
+1. Start at the section marked 'USER INPUTS: EDIT HERE FIRST' or change assumptions in any input blocks.
+2. Run the file directly to see the baseline output printed at the bottom.
+3. If you are unsure, keep the defaults and only change product / route / fuel / scenario selections.
+
+GENERAL NOTES
+- Units are shown in variable names or comments where possible.
+- Monetary values are in USD unless stated otherwise.
+- Energy is usually in kWh, MJ, or GJ depending on the stage.
+- Printed outputs are rounded for readability only; internal calculations are not rounded.
+"""
 
 import copy
 import math
 from pprint import pprint
 
-# ----------------- Static route data -----------------
+# ==================== USER INPUTS: EDIT HERE FIRST ====================
+# Static route and corridor data used by the shipping model.
 distances_nm = {
     "Townsville Port (AUS)": {"New Orleans": 9758, "Rotterdam": 11346, "Qingdao": 3954},
     "Antofagasta (Chile)":   {"New Orleans": 3567, "Rotterdam": 6965,  "Qingdao": 10095},
@@ -70,7 +84,6 @@ Fuel_Assumptions = [
 #
 #
 #
-# ----------------- User selection -----------------
 # ----------------- User selections -----------------
 SHIPPING_PRODUCT = "Refined Copper"   # choose: "Ore", "Concentrate", "Refined Copper"
 
@@ -79,8 +92,8 @@ ARRIVAL_PORT = "New Orleans"               # choose from distances_nm[DEPARTURE_
 
 VESSEL_TYPE = "Supramax"   # choose: "Handysize", "Supramax", "Panamax", "HandyCape"
 
-USE_CUSTOM_DISTANCE = False
-CUSTOM_DISTANCE_NM = 9758.0   # only used if USE_CUSTOM_DISTANCE = True
+USE_CUSTOM_DISTANCE = True
+CUSTOM_DISTANCE_NM = 5000.0   # only used if USE_CUSTOM_DISTANCE = True
 
 SELECTED_FUEL = "Heavy Fuel Oil (HFO)"   # choose: "Heavy Fuel Oil (HFO)", "Marine Gas Oil (MGO)", "Very Low Sulfur Fuel Oil (VLSFO)", "Ammonia", "Methanol"
 
@@ -134,6 +147,8 @@ def _warn_power_if_infeasible(p_req_kw, p_inst_kw, op_speed, speed_power_exp, se
             f"Warning: required propulsion {p_req_kw:,.0f} kW exceeds installed {p_inst_kw:,.0f} kW "
             f"at {op_speed:.1f} kn (n={float(speed_power_exp):.2f}, sea-state={float(sea_state_power_pct):.1f}%)."
         )
+
+# ==================== CORE MODEL FUNCTIONS ====================
 
 def run_leg(
     export_type, ore_grade, concentrate_grade, carbon_price,
@@ -411,7 +426,7 @@ def emissions_breakdown_sailing_port(legA_kwargs, legB_kwargs, fuel_name):
         "kgCO2/t-material": {"Sailing": sailing_year / denom_material, "Port + Canal": port_year / denom_material},
     }
 
-# ----------------- Defaults from the original UI -----------------
+# -------------------- Main default user inputs --------------------
 def compute_default_wacc(debt_frac_pct=40, cost_debt_pct=6.0, cost_equity_pct=12.0, tax_rate_pct=30.0):
     return (debt_frac_pct/100.0) * (cost_debt_pct/100.0) * (1 - tax_rate_pct/100.0) + (1 - debt_frac_pct/100.0) * (cost_equity_pct/100.0)
 
@@ -564,6 +579,8 @@ from pprint import pprint
 def rounded_dict(d, ndigits=2):
     return {k: round(float(v), ndigits) for k, v in d.items()}
 
+# ==================== OUTPUT HELPERS ====================
+
 def _print_summary(out):
     print("Baseline shipping backend run completed.")
     print(f"Fuel: {out['Scenario']}")
@@ -599,6 +616,8 @@ def _print_summary(out):
 
     print("\n=== EMISSIONS BREAKDOWN (kgCO2/yr) ===")
     pprint(rounded_dict(emissions_summary["kgCO2/yr"]))
+
+# ==================== EXAMPLE BASELINE RUN ====================
 
 if __name__ == "__main__":
     baseline = run_default_scenario()
