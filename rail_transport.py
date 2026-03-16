@@ -1,8 +1,4 @@
-"""Paper-safe backend for copper rail transport model.
-
-Extracted from the original Streamlit rail model to preserve the numerical
-backend and default assumptions while removing UI and dashboard logic.
-"""
+# Rail Transport Model
 
 from __future__ import annotations
 
@@ -10,22 +6,31 @@ from copy import deepcopy
 from pprint import pprint
 
 # -------------------- Material grades & unit conversion --------------------
+
 MATERIAL_GRADES = {
     "Ore": 0.006,
     "Concentrate": 0.30,
     "Refined Copper": 1.0,
 }
 
+# -------------------- User selection --------------------
+TRANSPORTED_MATERIAL = "Refined Copper"   # choose: "Ore", "Concentrate", "Refined Copper"
+
+if TRANSPORTED_MATERIAL not in MATERIAL_GRADES:
+    raise ValueError(f"Invalid TRANSPORTED_MATERIAL: {TRANSPORTED_MATERIAL}")
+
+TRANSPORT_GRADE = MATERIAL_GRADES[TRANSPORTED_MATERIAL]
+
 # -------------------- Scenario defaults --------------------
 DEFAULT_LOCOMOTIVE_DATA = {
     "Diesel": {
         "Locomotive_Cost_USD": 3_940_000,
-        "Empty_Weight_tonne": 123.7,
+        "Empty_Weight_tonne": 124.0,
         "Catenary_Cost_USD_per_km": 0.0,
         "Maintenance_USD_per_km": 7.08,
-        "Fuel_Consumption_kWh_per_tkm": 0.117,
-        "Fuel_Price_USD_per_kWh": 0.123,
-        "Emissions_kgCO2_per_kWh": 0.253,
+        "Fuel_Consumption_kWh_per_tkm": 0.12,
+        "Fuel_Price_USD_per_kWh": 0.124,
+        "Emissions_kgCO2_per_kWh": 0.25,
     },
     "Electric": {
         "Locomotive_Cost_USD": 5_470_000,
@@ -111,8 +116,8 @@ DEFAULT_LOCOMOTIVE_DATA = {
 }
 
 DEFAULT_SCENARIO = "Diesel"
-DEFAULT_MATERIAL = "Concentrate"
-DEFAULT_GRADE = MATERIAL_GRADES[DEFAULT_MATERIAL]
+DEFAULT_MATERIAL = TRANSPORTED_MATERIAL
+DEFAULT_GRADE = TRANSPORT_GRADE
 
 DEFAULT_INPUTS = {
     "one_way_km": 250,
@@ -147,7 +152,7 @@ DEFAULT_INPUTS = {
     "shift_mult": 4.8,
     "hours_per_worker": 1920,
     "wage_per_hour": 45.0,
-    "Carbon_Price": 21.9,
+    "Carbon_Price": 0.0,
     "Infra_Economic_Life": 20,
     "Infra_OM_pct": 2.0,
     "Infra_Electricity_Price_USD_per_kWh": 0.11,
@@ -214,7 +219,7 @@ def compute_results(
     return_energy_factor=0.5,
     return_has_cargo=False,
     shift_positions=2,
-    shift_mult=3.5,
+    shift_mult=4.8,
     hours_per_worker=1920,
     wage_per_hour=45.0,
     Carbon_Price=21.9,
@@ -446,36 +451,61 @@ def _augment_result_units(result):
         + result.get("Annual Carbon Cost (USD/year)", 0.0)
     )
 
+    loaded_em_kg_yr = (
+        float(result.get("_loaded_energy_trip_kWh", 0.0))
+        * float(result.get("_round_trips_per_year", 0.0))
+        * float(result.get("_ef_kg_per_kWh", 0.0))
+    )
+
+    empty_return_em_kg_yr = (
+        float(result.get("_return_energy_trip_kWh", 0.0))
+        * float(result.get("_round_trips_per_year", 0.0))
+        * float(result.get("_ef_kg_per_kWh", 0.0))
+    )
+
+    capex_annual = (
+        float(result.get("Wagon CAPEX (USD/year)", 0.0))
+        + float(result.get("Locomotive CAPEX (USD/year)", 0.0))
+        + float(result.get("Catenary CAPEX (USD/year)", 0.0))
+        + float(result.get("Additional CAPEX (USD/year)", 0.0))
+        + float(result.get("Charging CAPEX (USD/year)", 0.0))
+        + float(result.get("H2 Station CAPEX (USD/year)", 0.0))
+        + float(result.get("Electrolyser CAPEX (USD/year)", 0.0))
+    )
+
+    om_access_annual = (
+        float(result.get("Flag Fall Rail Access Fee Cost (USD/year)", 0.0))
+        + float(result.get("Variable Rail Access Fee Cost (USD/year)", 0.0))
+        + float(result.get("Locomotive Maintenance and Repair Cost (USD/year)", 0.0))
+        + float(result.get("Wagon Maintenance and Repair Cost (USD/year)", 0.0))
+        + float(result.get("Rail Network Maintenance and Repair Cost (USD/year)", 0.0))
+        + float(result.get("Cargo Insurance Cost (USD/year)", 0.0))
+        + float(result.get("Staffing Cost (USD/year)", 0.0))
+        + float(result.get("Additional Operating Cost (USD/year)", 0.0))
+        + float(result.get("Battery Replacement (USD/year)", 0.0))
+        + float(result.get("Demand Charges (USD/year)", 0.0))
+        + float(result.get("Infra Electricity Cost (USD/year)", 0.0))
+    )
+
+    fuel_annual = float(result.get("Fuel Cost (USD/year)", 0.0))
+    carbon_annual = float(result.get("Annual Carbon Cost (USD/year)", 0.0))
+
     annual_costs = {
-        "Wagon CAPEX": float(result.get("Wagon CAPEX (USD/year)", 0.0)),
-        "Locomotive CAPEX": float(result.get("Locomotive CAPEX (USD/year)", 0.0)),
-        "Catenary CAPEX": float(result.get("Catenary CAPEX (USD/year)", 0.0)),
-        "Additional CAPEX": float(result.get("Additional CAPEX (USD/year)", 0.0)),
-        "Charging CAPEX": float(result.get("Charging CAPEX (USD/year)", 0.0)),
-        "H2 Station CAPEX": float(result.get("H2 Station CAPEX (USD/year)", 0.0)),
-        "Electrolyser CAPEX": float(result.get("Electrolyser CAPEX (USD/year)", 0.0)),
-        "Flag Fall Access": float(result.get("Flag Fall Rail Access Fee Cost (USD/year)", 0.0)),
-        "Variable Access": float(result.get("Variable Rail Access Fee Cost (USD/year)", 0.0)),
-        "Locomotive M&R": float(result.get("Locomotive Maintenance and Repair Cost (USD/year)", 0.0)),
-        "Wagon M&R": float(result.get("Wagon Maintenance and Repair Cost (USD/year)", 0.0)),
-        "Rail Network M&R": float(result.get("Rail Network Maintenance and Repair Cost (USD/year)", 0.0)),
-        "Cargo Insurance": float(result.get("Cargo Insurance Cost (USD/year)", 0.0)),
-        "Fuel": float(result.get("Fuel Cost (USD/year)", 0.0)),
-        "Staffing": float(result.get("Staffing Cost (USD/year)", 0.0)),
-        "Additional OPEX": float(result.get("Additional Operating Cost (USD/year)", 0.0)),
-        "Battery Replacement": float(result.get("Battery Replacement (USD/year)", 0.0)),
-        "Demand Charges": float(result.get("Demand Charges (USD/year)", 0.0)),
-        "Infra Electricity": float(result.get("Infra Electricity Cost (USD/year)", 0.0)),
-        "Carbon Pricing": float(result.get("Annual Carbon Cost (USD/year)", 0.0)),
+        "CAPEX": capex_annual,
+        "O&M + Access": om_access_annual,
+        "Fuel": fuel_annual,
+        "Carbon": carbon_annual,
     }
+
     annual_emissions = {
-        "Traction energy": float(result.get("Total Annual Emissions (kgCO2/year)", 0.0)) - float(result.get("Infra Electricity Emissions (kgCO2/year)", 0.0)),
-        "Infra electricity": float(result.get("Infra Electricity Emissions (kgCO2/year)", 0.0)),
+        "Loaded Leg (direct fuel)": loaded_em_kg_yr,
+        "Empty Return (direct fuel)": empty_return_em_kg_yr,
     }
 
     result["Total Levelised Cost of Rail (USD/t-Cu)"] = _safe_div(total_cost_year, t_cu)
     result["Total Annual Emissions (kgCO2/t-material)"] = _safe_div(result.get("Total Annual Emissions (kgCO2/year)", 0.0), t_material)
     result["Total Annual Emissions (kgCO2/t-Cu)"] = _safe_div(result.get("Total Annual Emissions (kgCO2/year)", 0.0), t_cu)
+
     result["Cost_Breakdown_Summary"] = {
         "USD/year": annual_costs,
         "USD/t-material": {k: _safe_div(v, t_material) for k, v in annual_costs.items()},
@@ -539,7 +569,7 @@ def _print_summary(result):
     pprint(rounded_dict(emissions_summary["kgCO2/year"]))
 
 if __name__ == "__main__":
-    baseline_all = run_model(material_choice=DEFAULT_MATERIAL)
+    baseline_all = run_model(material_choice=TRANSPORTED_MATERIAL, grade=TRANSPORT_GRADE,)
     baseline = baseline_all[DEFAULT_SCENARIO]
     print("Baseline rail backend run completed.")
     _print_summary(baseline)
